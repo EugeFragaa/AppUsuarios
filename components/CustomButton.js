@@ -1,6 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 
-export default function CustomButton({ text, onPress, backgroundColor = "#7b2cbf" }) {
+export default function CustomButton({ text, onPress, backgroundColor = "#724032" }) {
   return (
     <TouchableOpacity style={[styles.button, { backgroundColor }]} onPress={onPress}>
       <Text style={styles.text}>{text}</Text>

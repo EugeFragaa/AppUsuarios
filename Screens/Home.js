@@ -1,32 +1,31 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TextInput, ScrollView, SafeAreaView, StatusBar } from "react-native";
 import CustomButton from "../components/CustomButton";
+import Mensaje from "../components/Mensaje";
+import { useSelector, useDispatch } from "react-redux";
+import { setUsuarios, agregarUsuario } from "../redux/userSlice";
 
 export default function Home() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nombre, setNombre] = useState("");
   const [job, setJob] = useState("");
-  const [usuarios, setUsuarios] = useState([]);
+  const [mensajeVisible, setMensajeVisible] = useState(false);
 
-  const abrirFormulario = () => {
-    setMostrarFormulario(!mostrarFormulario);
-  };
+  const dispatch = useDispatch();
+  const usuarios = useSelector((state) => state.users.lista);
 
-  // GET: Cargar usuarios desde ReqRes
+  const abrirFormulario = () => setMostrarFormulario(!mostrarFormulario);
+  const cerrarMensaje = () => setMensajeVisible(false);
+
   useEffect(() => {
     fetch("https://reqres.in/api/users?page=1")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data.data)) {
-          setUsuarios(data.data);
-        } else {
-          setUsuarios([]);
-        }
+        dispatch(setUsuarios(data.data || []));
       })
-      .catch(() => setUsuarios([]));
+      .catch(() => dispatch(setUsuarios([])));
   }, []);
 
-  // POST: Crear usuario nuevo
   const guardarUsuario = () => {
     if (!nombre || !job) return;
 
@@ -36,122 +35,125 @@ export default function Home() {
       body: JSON.stringify({ name: nombre, job }),
     })
       .then((res) => res.json())
-      .then((data) => {
+      .then(() => {
         const nuevo = {
           id: Date.now(),
-          first_name: data.name,
-          last_name: "",
-          email: "",
-          job: data.job,
+          first_name: nombre,
+          email: "Sin email",
+          job: job,
         };
 
-        setUsuarios([nuevo, ...usuarios]);
+        dispatch(agregarUsuario(nuevo));
         setNombre("");
         setJob("");
         setMostrarFormulario(false);
-      })
-      .catch(() => {});
+        setMensajeVisible(true);
+      });
   };
 
   return (
-    <View style={styles.container}>
-      
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Generador de Usuarios App</Text>
-      </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar backgroundColor="#7f012b" barStyle="light-content" />
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Listado de usuarios</Text>
+      <View style={styles.container}>
 
-        <ScrollView style={styles.lista}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>- APP GENERADOR DE USUARIOS -</Text>
+        </View>
 
-          {Array.isArray(usuarios) &&
-            usuarios.map((u) => (
+        <View style={styles.content}>
+          <Text style={styles.title}>Listado de Usuarios</Text>
+
+          <ScrollView style={styles.lista}>
+            {usuarios.map((u) => (
               <View key={u.id} style={styles.card}>
-                
-                <Text style={styles.cardNombre}>
-                  {u.first_name || u.name}
-                </Text>
-
-                <Text style={styles.cardJob}>
-                  {u.last_name || u.job}
-                </Text>
-
-                <Text style={styles.cardEmail}>
-                  {u.email}
-                </Text>
-
+                <Text style={styles.cardNombre}>{u.first_name}</Text>
+                <Text style={styles.cardEmail}>{u.email}</Text>
+                <Text style={styles.cardJob}>{u.job}</Text>
               </View>
             ))}
+          </ScrollView>
 
-        </ScrollView>
+          <CustomButton
+            text={mostrarFormulario ? " X " : "Crear usuario"}
+            onPress={abrirFormulario}
+          />
 
-        <CustomButton
-          text={mostrarFormulario ? "Cerrar formulario" : "Crear usuario"}
-          onPress={abrirFormulario}
-          backgroundColor="#7b2cbf"
-        />
+          {mostrarFormulario && (
+            <View style={styles.formulario}>
+              <TextInput
+                placeholder="Nombre"
+                style={styles.input}
+                value={nombre}
+                onChangeText={setNombre}
+              />
+              <TextInput
+                placeholder="Job"
+                style={styles.input}
+                value={job}
+                onChangeText={setJob}
+              />
+              <CustomButton
+                text="Guardar usuario"
+                onPress={guardarUsuario}
+                backgroundColor="#724032"
+              />
+            </View>
+          )}
+        </View>
 
-        {mostrarFormulario && (
-          <View style={styles.formulario}>
-            <TextInput
-              placeholder="Nombre"
-              style={styles.input}
-              value={nombre}
-              onChangeText={setNombre}
-            />
-            <TextInput
-              placeholder="Job"
-              style={styles.input}
-              value={job}
-              onChangeText={setJob}
-            />
+        <View style={styles.footer} />
 
-            <CustomButton
-              text="Guardar usuario"
-              onPress={guardarUsuario}
-              backgroundColor="#4caf50"
-            />
-          </View>
+        {mensajeVisible && (
+          <Mensaje
+            tipo="exito"
+            mensaje="Usuario creado exitosamente"
+            onCerrar={cerrarMensaje}
+          />
         )}
 
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f2f2f2" },
-
+  safe: {
+    flex: 1,
+    backgroundColor: "#7f012b",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+  },
   header: {
     width: "100%",
-    paddingVertical: 20,
-    backgroundColor: "#6200ea",
+    paddingVertical: 16,
+    paddingTop: StatusBar.currentHeight,
+    backgroundColor: "#7f012b",
     justifyContent: "center",
     alignItems: "center",
   },
-
-  headerText: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-
+  headerText: { color: "#ffe6d1", fontSize: 15, fontWeight: "bold" },
   content: { flex: 1, alignItems: "center", marginTop: 20 },
-
-  title: { fontSize: 24, fontWeight: "700", color: "#333", marginBottom: 15 },
-
-  lista: { width: "90%", marginBottom: 20 },
-
+  title: { fontSize: 24, fontWeight: "700", marginBottom: 15 },
+  lista: {
+    width: "90%",
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#7f012b",
+    borderRadius: 12,
+    padding: 8,
+  },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffe6d1",
     padding: 15,
     borderRadius: 10,
     marginBottom: 12,
   },
-
   cardNombre: { fontSize: 18, fontWeight: "bold" },
-
-  cardJob: { fontSize: 16, color: "#555" },
-
   cardEmail: { fontSize: 14, color: "#777" },
-
+  cardJob: { fontSize: 16, color: "#555" },
   formulario: {
     width: "85%",
     backgroundColor: "#fff",
@@ -159,12 +161,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 20,
   },
-
   input: {
     backgroundColor: "#eee",
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
-    fontSize: 16,
+  },
+  footer: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "#7f012b",
   },
 });
+
+
