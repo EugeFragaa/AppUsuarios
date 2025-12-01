@@ -13,11 +13,15 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import CustomButton from "../components/CustomButton";
 import Mensaje from "../components/Mensaje";
-import { obtenerUsuarios, crearUsuario, resetEstado } from "../redux/postSlice";
+import {
+  obtenerUsuarios,
+  crearUsuario,
+  resetEstado,
+} from "../redux/postSlice";
 
 export default function Home() {
   const dispatch = useDispatch();
-  const { usuarios, success } = useSelector((state) => state.post);
+  const { usuarios, success, loading } = useSelector((state) => state.post);
 
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -36,7 +40,7 @@ export default function Home() {
       setNombre("");
       setJob("");
       setMostrarFormulario(false);
-      setTimeout(() => dispatch(resetEstado()), 600);
+      setTimeout(() => dispatch(resetEstado()), 800);
     });
   };
 
@@ -54,10 +58,11 @@ export default function Home() {
           </View>
 
           <View style={styles.content}>
-
             {!mostrarFormulario && (
               <>
                 <Text style={styles.title}>Listado de Usuarios</Text>
+                <Text style={styles.subtitulo}> - Desliza para ver todas los usuarios - </Text>
+
 
                 <ScrollView style={styles.lista}>
                   {usuarios.map((u) => (
@@ -90,6 +95,7 @@ export default function Home() {
                   value={job}
                   onChangeText={setJob}
                 />
+
                 <CustomButton
                   text="Guardar usuario"
                   onPress={guardarUsuario}
@@ -100,6 +106,14 @@ export default function Home() {
           </View>
 
           <View style={styles.footer} />
+
+          {loading && (
+            <Mensaje
+              tipo="info"
+              mensaje="Creando usuario..."
+              onCerrar={() => {}}
+            />
+          )}
 
           {success && (
             <Mensaje
@@ -184,5 +198,13 @@ const styles = StyleSheet.create({
     height: 60,
     backgroundColor: "#7f012b",
   },
+  subtitulo: {
+  fontSize: 18,
+  fontWeight: "600",
+  color: "#7f012b",
+  marginBottom: 10,
+  marginTop: 5,
+  alignSelf: "flex-start",
+  paddingLeft: 5,
+},
 });
-
