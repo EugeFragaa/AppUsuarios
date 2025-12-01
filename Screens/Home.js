@@ -61,8 +61,6 @@ export default function Home() {
             {!mostrarFormulario && (
               <>
                 <Text style={styles.title}>Listado de Usuarios</Text>
-                <Text style={styles.subtitulo}> - Desliza para ver todas los usuarios - </Text>
-
 
                 <ScrollView style={styles.lista}>
                   {usuarios.map((u) => (
@@ -198,13 +196,5 @@ const styles = StyleSheet.create({
     height: 60,
     backgroundColor: "#7f012b",
   },
-  subtitulo: {
-  fontSize: 18,
-  fontWeight: "600",
-  color: "#7f012b",
-  marginBottom: 10,
-  marginTop: 5,
-  alignSelf: "flex-start",
-  paddingLeft: 5,
-},
 });
+

@@ -67,3 +67,4 @@ const postSlice = createSlice({
 
 export const { resetEstado } = postSlice.actions;
 export default postSlice.reducer;
+
