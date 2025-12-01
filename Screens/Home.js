@@ -1,118 +1,115 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView, SafeAreaView, StatusBar } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  SafeAreaView,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 import CustomButton from "../components/CustomButton";
 import Mensaje from "../components/Mensaje";
-import { useSelector, useDispatch } from "react-redux";
-import { setUsuarios, agregarUsuario } from "../redux/userSlice";
+import { obtenerUsuarios, crearUsuario, resetEstado } from "../redux/postSlice";
 
 export default function Home() {
+  const dispatch = useDispatch();
+  const { usuarios, success } = useSelector((state) => state.post);
+
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nombre, setNombre] = useState("");
   const [job, setJob] = useState("");
-  const [mensajeVisible, setMensajeVisible] = useState(false);
-
-  const dispatch = useDispatch();
-  const usuarios = useSelector((state) => state.users.lista);
-
-  const abrirFormulario = () => setMostrarFormulario(!mostrarFormulario);
-  const cerrarMensaje = () => setMensajeVisible(false);
 
   useEffect(() => {
-    fetch("https://reqres.in/api/users?page=1")
-      .then((res) => res.json())
-      .then((data) => {
-        dispatch(setUsuarios(data.data || []));
-      })
-      .catch(() => dispatch(setUsuarios([])));
+    dispatch(obtenerUsuarios());
   }, []);
+
+  const abrirFormulario = () => setMostrarFormulario(!mostrarFormulario);
 
   const guardarUsuario = () => {
     if (!nombre || !job) return;
 
-    fetch("https://reqres.in/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: nombre, job }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        const nuevo = {
-          id: Date.now(),
-          first_name: nombre,
-          email: "Sin email",
-          job: job,
-        };
-
-        dispatch(agregarUsuario(nuevo));
-        setNombre("");
-        setJob("");
-        setMostrarFormulario(false);
-        setMensajeVisible(true);
-      });
+    dispatch(crearUsuario({ nombre, job })).then(() => {
+      setNombre("");
+      setJob("");
+      setMostrarFormulario(false);
+      setTimeout(() => dispatch(resetEstado()), 600);
+    });
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar backgroundColor="#7f012b" barStyle="light-content" />
 
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerText}>- APP GENERADOR DE USUARIOS -</Text>
+          </View>
 
-        <View style={styles.header}>
-          <Text style={styles.headerText}>- APP GENERADOR DE USUARIOS -</Text>
-        </View>
+          <View style={styles.content}>
 
-        <View style={styles.content}>
-          <Text style={styles.title}>Listado de Usuarios</Text>
+            {!mostrarFormulario && (
+              <>
+                <Text style={styles.title}>Listado de Usuarios</Text>
 
-          <ScrollView style={styles.lista}>
-            {usuarios.map((u) => (
-              <View key={u.id} style={styles.card}>
-                <Text style={styles.cardNombre}>{u.first_name}</Text>
-                <Text style={styles.cardEmail}>{u.email}</Text>
-                <Text style={styles.cardJob}>{u.job}</Text>
+                <ScrollView style={styles.lista}>
+                  {usuarios.map((u) => (
+                    <View key={u.id} style={styles.card}>
+                      <Text style={styles.cardNombre}>{u.first_name}</Text>
+                      <Text style={styles.cardEmail}>{u.email}</Text>
+                      <Text style={styles.cardJob}>{u.job}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            <CustomButton
+              text={mostrarFormulario ? "X" : "Crear usuario"}
+              onPress={abrirFormulario}
+            />
+
+            {mostrarFormulario && (
+              <View style={styles.formulario}>
+                <TextInput
+                  placeholder="Nombre"
+                  style={styles.input}
+                  value={nombre}
+                  onChangeText={setNombre}
+                />
+                <TextInput
+                  placeholder="Job"
+                  style={styles.input}
+                  value={job}
+                  onChangeText={setJob}
+                />
+                <CustomButton
+                  text="Guardar usuario"
+                  onPress={guardarUsuario}
+                  backgroundColor="#724032"
+                />
               </View>
-            ))}
-          </ScrollView>
+            )}
+          </View>
 
-          <CustomButton
-            text={mostrarFormulario ? " X " : "Crear usuario"}
-            onPress={abrirFormulario}
-          />
+          <View style={styles.footer} />
 
-          {mostrarFormulario && (
-            <View style={styles.formulario}>
-              <TextInput
-                placeholder="Nombre"
-                style={styles.input}
-                value={nombre}
-                onChangeText={setNombre}
-              />
-              <TextInput
-                placeholder="Job"
-                style={styles.input}
-                value={job}
-                onChangeText={setJob}
-              />
-              <CustomButton
-                text="Guardar usuario"
-                onPress={guardarUsuario}
-                backgroundColor="#724032"
-              />
-            </View>
+          {success && (
+            <Mensaje
+              tipo="exito"
+              mensaje="Usuario creado exitosamente"
+              onCerrar={() => dispatch(resetEstado())}
+            />
           )}
         </View>
-
-        <View style={styles.footer} />
-
-        {mensajeVisible && (
-          <Mensaje
-            tipo="exito"
-            mensaje="Usuario creado exitosamente"
-            onCerrar={cerrarMensaje}
-          />
-        )}
-
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -134,9 +131,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerText: { color: "#ffe6d1", fontSize: 15, fontWeight: "bold" },
-  content: { flex: 1, alignItems: "center", marginTop: 20 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 15 },
+  headerText: {
+    color: "#ffe6d1",
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    marginTop: 20,
+    paddingBottom: 80,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 15,
+  },
   lista: {
     width: "90%",
     marginBottom: 20,
@@ -159,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
-    marginBottom: 20,
+    marginTop: 10,
   },
   input: {
     backgroundColor: "#eee",
@@ -168,10 +178,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   footer: {
+    position: "absolute",
+    bottom: 0,
     width: "100%",
     height: 60,
     backgroundColor: "#7f012b",
   },
 });
-
 
